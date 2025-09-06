@@ -113,7 +113,12 @@ export default function Dashboard() {
       const toDate = iso(end);
 
       // 1) Calendar discovery (no hard cap filter at this stage)
-      const { fetchWeekCalendar } = await import("@/api/functions");
+      // In local dev, optionally use a stubbed calendar source to avoid hosted auth.
+      const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const useLocalCalendar = (import.meta?.env?.VITE_USE_LOCAL_CALENDAR === 'true') && isLocalHost;
+      const { fetchWeekCalendar } = useLocalCalendar
+        ? await import("@/services/calendarLocal")
+        : await import("@/api/functions");
       const weekResRaw = await fetchWeekCalendar({ fromDate, toDate });
       const weekRes = unwrapData(weekResRaw);
 
