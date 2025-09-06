@@ -15,3 +15,15 @@ export const base44 = createClient({
 // No manual window.location redirect here.
 // Leave any old redirect code commented out.
 
+if (isBrowser) {
+  // Help verify local bypass is active in the browser console
+  // eslint-disable-next-line no-console
+  console.log(
+    "[base44Client] requiresAuth:",
+    !(isLocal && disableAuth),
+    "isLocal:",
+    isLocal,
+    "disableAuth:",
+    disableAuth
+  );
+}
