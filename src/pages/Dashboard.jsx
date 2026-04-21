@@ -113,7 +113,12 @@ export default function Dashboard() {
       const toDate = iso(end);
 
       // 1) Calendar discovery (no hard cap filter at this stage)
-      const { fetchWeekCalendar } = await import("@/api/functions");
+      // In local dev, optionally use a stubbed calendar source to avoid hosted auth.
+      const isLocalHost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const useLocalCalendar = (import.meta?.env?.VITE_USE_LOCAL_CALENDAR === 'true') && isLocalHost;
+      const { fetchWeekCalendar } = useLocalCalendar
+        ? await import("@/services/calendarLocal")
+        : await import("@/api/functions");
       const weekResRaw = await fetchWeekCalendar({ fromDate, toDate });
       const weekRes = unwrapData(weekResRaw);
 
@@ -142,11 +147,9 @@ export default function Dashboard() {
         return;
       }
 
-      // 2) Enrich WITHOUT a market-cap cutoff (show all tickers)
-      const { enrichTickers } = await import("@/api/functions");
-      const enrichResRaw = await enrichTickers({ items: uniqueItems, minMcap: 0 });
-      const enrichRes = unwrapData(enrichResRaw);
-      const enrichedRaw = Array.isArray(enrichRes.stocks) ? enrichRes.stocks : [];
+      // 2) Enrich with market-cap cutoff (>= $10B) using local service
+      const { enrichTickers } = await import("@/services/enrichment.js");
+      const enrichedRaw = await enrichTickers(uniqueItems, { mcapMin: 10e9 });
 
       if (!enrichedRaw.length) {
         const msg = "No symbols returned from enrichment for the selected week (no market-cap filter applied).";
